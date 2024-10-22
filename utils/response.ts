@@ -3,14 +3,14 @@ import { STATUS_CODE } from './constants';
 
 export type StatusCodeType = (typeof STATUS_CODE)[keyof typeof STATUS_CODE];
 
-type ResponseMessage<T> = {
+export type ResponseMessage<T> = {
   status: 'success' | 'error';
   message: string;
   data?: T;
-  code?: StatusCodeType; // Optional for error responses
+  code?: StatusCodeType;
 };
 
-const sendResponse = <T>(
+export const sendResponse = <T>(
   c: Context,
   status: 'success' | 'error',
   message: string,
@@ -25,10 +25,8 @@ const sendResponse = <T>(
 
   if (status === 'error' && code !== undefined) {
     response.code = code;
-    return c.json(response, code); // Send the response with the provided error code
+    return c.json(response, code);
   }
 
-  return c.json(response, 200); // Default to 200 for success responses
+  return c.json(response, 200);
 };
-
-export default sendResponse;

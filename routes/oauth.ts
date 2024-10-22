@@ -1,14 +1,17 @@
+import { getInitKv, setInitKv } from '@/utils/functions';
+import { sendResponse } from '@/utils/response';
 import { kv } from '@vercel/kv';
 import { Hono } from 'hono';
 import { env } from 'hono/adapter';
 import { html } from 'hono/html';
 import { ENV_VAR, STATUS_CODE } from '../utils/constants';
-import sendResponse from '../utils/response';
+import { authSuccessHTML } from '@/templates/authSuccess';
 const oauthRouter = new Hono();
-const AUTH_MAP = new Map();
 
-const INITIAL_VALUE = 'temp_value';
-
+/**
+ * @route GET /clickup
+ * @returns  Redirects to ClickUp authorization URL or sends an error response.
+ */
 oauthRouter.get('/clickup', async (c) => {
   const { CLIENT_ID, REDIRECT_URL } = env(c);
   const id = c.req.query('id');
@@ -17,28 +20,29 @@ oauthRouter.get('/clickup', async (c) => {
     return sendResponse(c, 'error', 'No provided ID');
   }
 
-  await kv.set(`init-${id}`, true);
+  await setInitKv(id);
 
   const clickupAuthUrl = `https://app.clickup.com/api?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URL}?id=${id}`;
+
   return c.redirect(clickupAuthUrl);
 });
-
+/**
+ * @route GET /callback
+ * @returns Sends an HTML response on success or an error response.
+ */
 oauthRouter.get('/callback', async (c) => {
   const code = c.req.query('code');
   const id = c.req.query('id');
 
-  if (!code || !id) {
-    return sendResponse(c, 'error', 'No code was provided');
-  }
+  if (!code || !id) return sendResponse(c, 'error', 'No code was provided');
 
-  const isValidId = await kv.get(`init-${id}`);
-  if (!isValidId) {
-    return sendResponse(c, 'error', 'Invalid request ID');
-  }
+  const isValidId = await getInitKv(id);
+  if (!isValidId) return sendResponse(c, 'error', 'Invalid request ID');
 
   const { CLIENT_ID, CLIENT_SECRET } = env<ENV_VAR>(c);
 
   const tokenUrl = `https://api.clickup.com/api/v2/oauth/token`;
+
   const body = {
     client_id: CLIENT_ID,
     client_secret: CLIENT_SECRET,
@@ -69,33 +73,7 @@ oauthRouter.get('/callback', async (c) => {
 
     await kv.hset(id, { access_token: data.access_token });
 
-    return c.html(
-      html`<!DOCTYPE html>
-        <html lang="en">
-          <head>
-            <meta charset="UTF-8" />
-            <meta
-              name="viewport"
-              content="width=device-width, initial-scale=1.0"
-            />
-            <title>Authorization Successful</title>
-            <link
-              href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
-              rel="stylesheet"
-            />
-          </head>
-          <body class="flex items-center justify-center h-screen bg-gray-100">
-            <div class="text-center">
-              <h1 class="text-3xl font-bold text-green-600">
-                Your app is authorized!
-              </h1>
-              <p class="mt-4 text-lg text-gray-700">
-                You can close this window and return to Figma.
-              </p>
-            </div>
-          </body>
-        </html>`
-    );
+    return c.html(html`${authSuccessHTML}`);
   } catch (error) {
     console.error('Error fetching access token:', error);
     return sendResponse(
@@ -108,6 +86,11 @@ oauthRouter.get('/callback', async (c) => {
   }
 });
 
+/**
+ * POST /access-token
+ * Retrieves the access token for a given request ID.
+ * @returns {Promise<void>} Sends a response with the access token if available, or an error message if not.
+ */
 oauthRouter.post('/access-token', async (c) => {
   const body = await c.req.json();
   const { id } = body;
