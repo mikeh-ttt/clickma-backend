@@ -1,0 +1,15 @@
+{
+  "name": "clickma-backend",
+  "scripts": {
+    "start": "vercel dev",
+    "deploy": "vercel"
+  },
+  "dependencies": {
+    "@vercel/kv": "^3.0.0",
+    "hono": "^4.6.5",
+    "pkce-challenge": "^4.1.0"
+  },
+  "devDependencies": {
+    "vercel": "^37.11.0"
+  }
+}
