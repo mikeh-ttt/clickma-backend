@@ -1,11 +1,11 @@
-import { getInitKv, setInitKv } from '@/utils/functions';
-import { sendResponse } from '@/utils/response';
+import { getInitKv, setInitKv } from '../utils/functions';
+import { sendResponse } from '../utils/response';
 import { kv } from '@vercel/kv';
 import { Hono } from 'hono';
 import { env } from 'hono/adapter';
 import { html } from 'hono/html';
 import { ENV_VAR, STATUS_CODE } from '../utils/constants';
-import { authSuccessHTML } from '@/templates/authSuccess';
+import { authSuccessHTML } from '../templates/authSuccess';
 const oauthRouter = new Hono();
 
 /**

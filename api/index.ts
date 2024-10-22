@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { handle } from 'hono/vercel';
-import oauthRoutes from '@/routes/oauth';
+import oauthRoutes from '../routes/oauth';
 
 export const config = {
   runtime: 'edge',
