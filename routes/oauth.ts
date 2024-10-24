@@ -6,6 +6,7 @@ import { env } from 'hono/adapter';
 import { html } from 'hono/html';
 import { ENV_VAR, STATUS_CODE } from '../utils/constants';
 import { authSuccessHTML } from '../templates/authSuccess';
+import { fetchAccessToken } from '@/utils/functions';
 const oauthRouter = new Hono();
 
 /**
@@ -41,7 +42,9 @@ oauthRouter.get('/callback', async (c) => {
 
   const { CLIENT_ID, CLIENT_SECRET } = env<ENV_VAR>(c);
 
-  const tokenUrl = `https://api.clickup.com/api/v2/oauth/token`;
+  const tokenAPI = `https://api.clickup.com/api/v2/oauth/token`;
+
+  const workspaceAPI = `https://api.clickup.com/api/v2/team`;
 
   const body = {
     client_id: CLIENT_ID,
@@ -50,7 +53,7 @@ oauthRouter.get('/callback', async (c) => {
   };
 
   try {
-    const response = await fetch(tokenUrl, {
+    const response = await fetch(tokenAPI, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -69,9 +72,23 @@ oauthRouter.get('/callback', async (c) => {
       );
     }
 
-    const data = await response.json();
+    const data: { access_token: string } = await response.json();
 
-    await kv.hset(id, { access_token: data.access_token });
+    const { access_token } = data;
+
+    const fetchWorkspace = await fetch(workspaceAPI, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: access_token,
+      },
+    });
+
+    const fetchWorkspaceResonse = await fetchWorkspace.json();
+
+    const workspace = fetchWorkspaceResonse?.teams?.[0]?.id;
+
+    await kv.hset(id, { access_token: access_token, workspace });
 
     return c.html(html`${authSuccessHTML}`);
   } catch (error) {
@@ -95,9 +112,11 @@ oauthRouter.post('/access-token', async (c) => {
   const body = await c.req.json();
   const { id } = body;
   const accessToken = await kv.hget(id, 'access_token');
+  const workspace = await kv.hget(id, 'workspace');
   if (accessToken) {
     return sendResponse(c, 'success', 'Access token retrieved successfully', {
       access_token: accessToken,
+      workspace,
     });
   }
 
