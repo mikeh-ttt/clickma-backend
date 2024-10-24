@@ -122,7 +122,7 @@ oauthRouter.get('/callback', async (c) => {
             </div>
             <div class="bg-gray-50 p-4">
               <button
-                onclick="closeWindow"
+                onclick="closeWindow();"
                 class="w-full bg-[#000] hover:bg-[#000] text-white font-bold py-2 px-4 rounded"
               >
                 Close Window
