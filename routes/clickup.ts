@@ -36,7 +36,7 @@ clickupRouter.get('/task/:workspaceId/:taskId', async (c) => {
 
   try {
     const response = await fetch(
-      `${CLICKUP_BASE_API}/task/${taskId}?team_id=${teamId}&custom_task_ids=${customTaskIds}`,
+      `${CLICKUP_BASE_API}/task/${taskId}?team_id=${teamId}&custom_task_ids=${customTaskIds}&include_markdown_description=true`,
       {
         headers: {
           Authorization: clickUpToken,
