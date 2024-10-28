@@ -2,7 +2,8 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { handle } from 'hono/vercel';
 import oauthRoutes from '../routes/oauth';
-
+import clickupRouter from '../routes/clickup';
+import { logger } from 'hono/logger';
 export const config = {
   runtime: 'edge',
 };
@@ -19,6 +20,7 @@ app.use(
   })
 );
 
+app.use(logger());
 // Main endpoint
 app.get('/', (c) => {
   return c.json({ message: 'Clickma endpoint is running' });
@@ -26,5 +28,6 @@ app.get('/', (c) => {
 
 // Use the oauth routes
 app.route('/oauth', oauthRoutes);
+app.route('/clickup', clickupRouter);
 
 export default handle(app);

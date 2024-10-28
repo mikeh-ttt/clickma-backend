@@ -28,20 +28,6 @@ export const authorizationSuccessfulHtml = html`
             and return to Figma.
           </p>
         </div>
-        <div class="bg-gray-50 p-4">
-          <button
-            onclick="closeWindow();"
-            class="w-full bg-[#000] hover:bg-[#000] text-white font-bold py-2 px-4 rounded"
-          >
-            Close Window
-          </button>
-        </div>
-      </div>
-      <script>
-        function closeWindow() {
-          window.close();
-        }
-      </script>
     </body>
   </html>
 `;
