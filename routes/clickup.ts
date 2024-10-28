@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { createMiddleware } from 'hono/factory';
 import { StatusCode } from 'hono/utils/http-status';
+import { marked } from 'marked';
 const CLICKUP_BASE_API = 'https://api.clickup.com/api/v2';
 type Env = {
   Variables: {
@@ -51,7 +52,10 @@ clickupRouter.get('/task/:workspaceId/:taskId', async (c) => {
     }
 
     const data = await response.json();
-    return c.json(data);
+
+    const html_description = await marked.parse(data?.markdown_description);
+
+    return c.json({ ...data, html_description });
   } catch (error) {
     console.error('Error proxying request to ClickUp:', error);
     return c.json({ error: 'Failed to fetch data from ClickUp' }, 500);
