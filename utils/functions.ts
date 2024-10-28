@@ -10,4 +10,4 @@ export const getInitKv = async (id: string) => {
   return val;
 };
 
-const getInitializedId = (id: string) => `init-${id}`;
+export const getInitializedId = (id: string) => `init-${id}`;
