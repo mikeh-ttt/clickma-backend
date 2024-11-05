@@ -8,7 +8,7 @@ import { sendResponse } from '../utils/response';
 const oauthRouter = new Hono();
 
 oauthRouter.get('/generate-keys', async (c) => {
-  try {g
+  try {
     // Generate UUIDs for each key
     const readKey = `${generateUUID()}`;
     const writeKey = `${generateUUID()}`;
