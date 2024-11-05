@@ -12,7 +12,6 @@ export const hset = async <TData>(
 
 export const get = async <TData>(key: string) => {
   const data = await kv.get<TData>(key);
-
   return data;
 };
 

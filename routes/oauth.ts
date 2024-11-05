@@ -3,20 +3,17 @@ import { env } from 'hono/adapter';
 import { authorizationSuccessfulHtml } from '../templates/authorizationSuccessfulHtml';
 import { ENV_VAR, STATUS_CODE } from '../utils/constants';
 import { get, hget, hset, set } from '../utils/database';
-import { generateHash, generateUUID } from '../utils/hash';
+import { generateUUID } from '../utils/hash';
 import { sendResponse } from '../utils/response';
 const oauthRouter = new Hono();
 
 oauthRouter.get('/generate-keys', async (c) => {
-  try {
+  try {g
     // Generate UUIDs for each key
     const readKey = `${generateUUID()}`;
     const writeKey = `${generateUUID()}`;
 
-    // Hash the keys for storage
-    const readHash = await generateHash(readKey);
-    const writeHash = await generateHash(writeKey);
-    await set(readHash, writeHash);
+    await set(readKey, writeKey);
 
     return sendResponse(c, 'success', 'Keys are successfully generated', {
       readKey,
