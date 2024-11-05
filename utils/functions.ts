@@ -10,4 +10,8 @@ export const getInitKv = async (id: string) => {
   return val;
 };
 
+export const storeKeys = async (readKey: string, writeKey: string) => {
+  await kv.set(readKey, writeKey);
+};
+
 export const getInitializedId = (id: string) => `init-${id}`;

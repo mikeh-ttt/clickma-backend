@@ -1,42 +1,58 @@
-import { kv } from '@vercel/kv';
 import { Hono } from 'hono';
 import { env } from 'hono/adapter';
 import { authorizationSuccessfulHtml } from '../templates/authorizationSuccessfulHtml';
 import { ENV_VAR, STATUS_CODE } from '../utils/constants';
-import { getInitKv, setInitKv } from '../utils/functions';
+import { get, hget, hset, set } from '../utils/database';
+import { generateHash, generateUUID } from '../utils/hash';
 import { sendResponse } from '../utils/response';
 const oauthRouter = new Hono();
 
+oauthRouter.get('/generate-keys', async (c) => {
+  try {
+    // Generate UUIDs for each key
+    const readKey = `${generateUUID()}`;
+    const writeKey = `${generateUUID()}`;
+
+    // Hash the keys for storage
+    const readHash = await generateHash(readKey);
+    const writeHash = await generateHash(writeKey);
+    await set(readHash, writeHash);
+
+    return sendResponse(c, 'success', 'Keys are successfully generated', {
+      readKey,
+      writeKey,
+    });
+  } catch (error) {
+    console.error('Error generating keys:', error);
+    return sendResponse(c, 'error', 'Failed to generate API keys');
+  }
+});
 /**
  * @route GET /clickup
  * @returns  Redirects to ClickUp authorization URL or sends an error response.
  */
 oauthRouter.get('/clickup', async (c) => {
   const { CLIENT_ID, REDIRECT_URL } = env(c);
-  const id = c.req.query('id');
+  const state = c.req.query('state');
 
-  if (!id) {
-    return sendResponse(c, 'error', 'No provided ID');
+  if (!state) {
+    return sendResponse(c, 'error', 'No provided state');
   }
 
-  await setInitKv(id);
-
-  const clickupAuthUrl = `https://app.clickup.com/api?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URL}?id=${id}`;
+  const clickupAuthUrl = `https://app.clickup.com/api?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URL}?state=${state}`;
 
   return c.redirect(clickupAuthUrl);
 });
+
 /**
  * @route GET /callback
  * @returns Sends an HTML response on success or an error response.
  */
 oauthRouter.get('/callback', async (c) => {
   const code = c.req.query('code');
-  const id = c.req.query('id');
+  const state = c.req.query('state');
 
-  if (!code || !id) return sendResponse(c, 'error', 'No code was provided');
-
-  const isValidId = await getInitKv(id);
-  if (!isValidId) return sendResponse(c, 'error', 'Invalid request ID');
+  if (!code || !state) return sendResponse(c, 'error', 'No state was provided');
 
   const { CLIENT_ID, CLIENT_SECRET } = env<ENV_VAR>(c);
 
@@ -86,7 +102,7 @@ oauthRouter.get('/callback', async (c) => {
 
     const workspace = fetchWorkspaceResonse?.teams?.[0]?.id;
 
-    await kv.hset(id, { access_token: access_token, workspace });
+    await hset(state, { access_token, workspace });
 
     return c.html(authorizationSuccessfulHtml);
   } catch (error) {
@@ -94,7 +110,7 @@ oauthRouter.get('/callback', async (c) => {
     return sendResponse(
       c,
       'error',
-      'An error occurred while retrieving the access token',
+      'Failed to retrieve access token',
       undefined,
       STATUS_CODE.UNAUTHORIZED
     );
@@ -108,14 +124,33 @@ oauthRouter.get('/callback', async (c) => {
  */
 oauthRouter.post('/access-token', async (c) => {
   const body = await c.req.json();
-  const { id } = body;
-  const accessToken = await kv.hget(id, 'access_token');
-  const workspace = await kv.hget(id, 'workspace');
+  const { readKey } = body;
+
+  const writeKey = await get<string>(readKey);
+
+  if (!writeKey) {
+    return sendResponse(
+      c,
+      'error',
+      'Write key not found',
+      undefined,
+      STATUS_CODE.SERVER_ERROR
+    );
+  }
+
+  const accessToken = await hget(writeKey, 'access_token');
+  const workspace = await hget(writeKey, 'workspace');
+
   if (accessToken) {
-    return sendResponse(c, 'success', 'Access token retrieved successfully', {
-      access_token: accessToken,
-      workspace,
-    });
+    return sendResponse(
+      c,
+      'success',
+      'Access token is retrieved successfully',
+      {
+        access_token: accessToken,
+        workspace,
+      }
+    );
   }
 
   return sendResponse(c, 'error', 'No available access token');
