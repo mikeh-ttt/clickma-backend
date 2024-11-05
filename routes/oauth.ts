@@ -128,6 +128,8 @@ oauthRouter.post('/access-token', async (c) => {
 
   const writeKey = await get<string>(readKey);
 
+  console.log({ readKey, writeKey });
+
   if (!writeKey) {
     return sendResponse(
       c,
