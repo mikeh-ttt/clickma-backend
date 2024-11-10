@@ -2,10 +2,12 @@ import { Hono } from 'hono';
 import { env } from 'hono/adapter';
 import { authorizationSuccessfulHtml } from '../templates/authorizationSuccessfulHtml';
 import { ENV_VAR, STATUS_CODE } from '../utils/constants';
-import { get, hget, hset, set } from '../utils/database';
 import { generateUUID } from '../utils/hash';
 import { sendResponse } from '../utils/response';
+import { getStorageInstance, Storage } from '../utils/database';
 const oauthRouter = new Hono();
+
+const storage: Storage = getStorageInstance();
 
 oauthRouter.get('/generate-keys', async (c) => {
   try {
@@ -13,7 +15,7 @@ oauthRouter.get('/generate-keys', async (c) => {
     const readKey = `${generateUUID()}`;
     const writeKey = `${generateUUID()}`;
 
-    await set(readKey, writeKey);
+    await storage.set(readKey, writeKey);
 
     return sendResponse(c, 'success', 'Keys are successfully generated', {
       readKey,
@@ -99,7 +101,7 @@ oauthRouter.get('/callback', async (c) => {
 
     const workspace = fetchWorkspaceResonse?.teams?.[0]?.id;
 
-    await hset(state, { access_token, workspace });
+    await storage.hset(state, { access_token, workspace });
 
     return c.html(authorizationSuccessfulHtml);
   } catch (error) {
@@ -123,7 +125,7 @@ oauthRouter.post('/access-token', async (c) => {
   const body = await c.req.json();
   const { readKey } = body;
 
-  const writeKey = await get<string>(readKey);
+  const writeKey = await storage.get<string>(readKey);
 
   console.log({ readKey, writeKey });
 
@@ -137,8 +139,10 @@ oauthRouter.post('/access-token', async (c) => {
     );
   }
 
-  const accessToken = await hget(writeKey, 'access_token');
-  const workspace = await hget(writeKey, 'workspace');
+  const accessToken = await storage.hget(writeKey, 'access_token');
+  const workspace = await storage.hget(writeKey, 'workspace');
+
+  console.log({ accessToken, workspace });
 
   if (accessToken) {
     return sendResponse(
