@@ -1,16 +1,15 @@
 import { Hono } from 'hono';
 import { env } from 'hono/adapter';
+import { SECRET_KEY } from '../api';
 import { authorizationSuccessfulHtml } from '../templates/authorizationSuccessfulHtml';
 import { ENV_VAR, STATUS_CODE } from '../utils/constants';
+import { encryptToken } from '../utils/crypto';
+import { getStorageInstance, Storage } from '../utils/database';
 import { generateUUID } from '../utils/hash';
 import { sendResponse } from '../utils/response';
-import { getStorageInstance, Storage } from '../utils/database';
-import { encryptToken } from '../utils/crypto';
 const oauthRouter = new Hono();
 
 const storage: Storage = getStorageInstance();
-
-const SECRET_KEY = process.env.SECRET_KEY || 'encrypt_secret_key';
 
 oauthRouter.get('/generate-keys', async (c) => {
   try {

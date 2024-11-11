@@ -10,6 +10,8 @@ export const config = {
 
 const app = new Hono().basePath('/api');
 
+export const SECRET_KEY = process.env.SECRET_KEY || 'encrypt_secret_key';
+
 // CORS middleware
 app.use(
   '/*',
