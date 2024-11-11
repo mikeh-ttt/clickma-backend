@@ -5,9 +5,12 @@ import { ENV_VAR, STATUS_CODE } from '../utils/constants';
 import { generateUUID } from '../utils/hash';
 import { sendResponse } from '../utils/response';
 import { getStorageInstance, Storage } from '../utils/database';
+import { encryptToken } from '../utils/crypto';
 const oauthRouter = new Hono();
 
 const storage: Storage = getStorageInstance();
+
+const SECRET_KEY = process.env.SECRET_KEY || 'encrypt_secret_key';
 
 oauthRouter.get('/generate-keys', async (c) => {
   try {
@@ -101,7 +104,9 @@ oauthRouter.get('/callback', async (c) => {
 
     const workspace = fetchWorkspaceResonse?.teams?.[0]?.id;
 
-    await storage.hset(state, { access_token, workspace });
+    const encryptedToken = await encryptToken(access_token, SECRET_KEY);
+
+    await storage.hset(state, { access_token: encryptedToken, workspace });
 
     return c.html(authorizationSuccessfulHtml);
   } catch (error) {
