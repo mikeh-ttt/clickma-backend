@@ -1,126 +1,80 @@
+const DELIMETER = ':';
+
 import { Buffer } from 'buffer';
 
-// Constants for better maintainability
-const ALGORITHM = 'AES-GCM';
-const IV_LENGTH = 12; // 96-bits for AES-GCM
-const ENCODING = 'hex';
-const DELIMITER = ':';
-const VALID_KEY_LENGTHS = [16, 24, 32];
+export const encryptData = async (plainData: string, encryptionKey: string) => {
+  // Generate a random 96-bit initialization vector (IV)
+  const initVector = crypto.getRandomValues(new Uint8Array(12));
 
-interface CryptoConfig {
-  name: typeof ALGORITHM;
-  iv: Uint8Array;
-}
+  // Encode the data to be encrypted
+  const encodedData = new TextEncoder().encode(plainData);
 
-/**
- * Validates the secret key length
- * @throws {Error} if key length is invalid
- */
-function validateKeyLength(keyBytes: Uint8Array): void {
-  if (!VALID_KEY_LENGTHS.includes(keyBytes.length)) {
-    throw new Error(
-      `Invalid key length. Must be ${VALID_KEY_LENGTHS.join(
-        ', '
-      )} bytes (${VALID_KEY_LENGTHS.map((x) => x * 8).join(', ')} bits)`
-    );
-  }
-}
+  // Prepare the encryption key
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    Buffer.from(encryptionKey, 'base64'),
+    {
+      name: 'AES-GCM',
+      length: 256,
+    },
+    true,
+    ['encrypt', 'decrypt']
+  );
 
-/**
- * Creates a crypto key from the secret key
- */
-async function createCryptoKey(
-  keyBytes: Uint8Array,
-  usage: KeyUsage
-): Promise<CryptoKey> {
-  return await crypto.subtle.importKey('raw', keyBytes, ALGORITHM, false, [
-    usage,
-  ]);
-}
+  // Encrypt the encoded data with the key
+  const encryptedData = await crypto.subtle.encrypt(
+    {
+      name: 'AES-GCM',
+      iv: initVector,
+    },
+    cryptoKey,
+    encodedData
+  );
 
-/**
- * Encrypts a plaintext string using AES-GCM
- * @throws {Error} if encryption fails or key length is invalid
- */
-export async function encryptToken(
-  plainText: string,
-  secretKey: string
-): Promise<string> {
-  try {
-    const encoder = new TextEncoder();
-    const iv = crypto.getRandomValues(new Uint8Array(IV_LENGTH));
-    const keyBytes = encoder.encode(secretKey);
+  return `${Buffer.from(encryptedData).toString(
+    'base64'
+  )}${DELIMETER}${Buffer.from(initVector).toString('base64')}`;
+};
 
-    // Validate key length
-    validateKeyLength(keyBytes);
-
-    // Create crypto key
-    const keyMaterial = await createCryptoKey(keyBytes, 'encrypt');
-
-    // Encrypt the data
-    const config: CryptoConfig = { name: ALGORITHM, iv };
-    const encryptedData = await crypto.subtle.encrypt(
-      config,
-      keyMaterial,
-      encoder.encode(plainText)
-    );
-
-    // Format the result
-    return [
-      Buffer.from(iv).toString(ENCODING),
-      Buffer.from(encryptedData).toString(ENCODING),
-    ].join(DELIMITER);
-  } catch (error) {
-    throw new Error(
-      `Encryption failed: ${
-        error instanceof Error ? error.message : 'Unknown error'
-      }`
-    );
-  }
-}
-
-/**
- * Decrypts an encrypted string using AES-GCM
- * @throws {Error} if decryption fails, format is invalid, or key length is invalid
- */
-export async function decryptToken(
+export const decryptData = async (
   encryptedString: string,
-  secretKey: string
-): Promise<string> {
+  encryptionKey: string
+) => {
+  const [encryptedDataBase64, ivBase64] = encryptedString.split(DELIMETER);
+
+  if (!encryptedDataBase64 || !ivBase64) {
+    throw new Error('Invalid encrypted data format');
+  }
+
+  const encryptedData = Buffer.from(encryptedDataBase64, 'base64');
+  const initVector = Buffer.from(ivBase64, 'base64');
+
+  // Prepare the decryption key
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    Buffer.from(encryptionKey, 'base64'),
+    {
+      name: 'AES-GCM',
+      length: 256,
+    },
+    true,
+    ['encrypt', 'decrypt']
+  );
+
   try {
-    // Parse encrypted string
-    const [ivHex, encryptedDataHex] = encryptedString.split(DELIMITER);
-    if (!ivHex || !encryptedDataHex) {
-      throw new Error('Invalid encrypted string format');
-    }
-
-    const encoder = new TextEncoder();
-    const keyBytes = encoder.encode(secretKey);
-
-    // Validate key length
-    validateKeyLength(keyBytes);
-
-    // Convert hex strings to buffers
-    const iv = new Uint8Array(Buffer.from(ivHex, ENCODING));
-    const encryptedData = Buffer.from(encryptedDataHex, ENCODING);
-
-    // Create crypto key
-    const keyMaterial = await createCryptoKey(keyBytes, 'decrypt');
-
-    // Decrypt the data
-    const config: CryptoConfig = { name: ALGORITHM, iv };
-    const decryptedData = await crypto.subtle.decrypt(
-      config,
-      keyMaterial,
+    // Decrypt the encrypted data using the key and IV
+    const decodedData = await crypto.subtle.decrypt(
+      {
+        name: 'AES-GCM',
+        iv: initVector,
+      },
+      cryptoKey,
       encryptedData
     );
 
-    return new TextDecoder().decode(decryptedData);
+    // Decode and return the decrypted data
+    return new TextDecoder().decode(decodedData);
   } catch (error) {
-    throw new Error(
-      `Decryption failed: ${
-        error instanceof Error ? error.message : 'Unknown error'
-      }`
-    );
+    return JSON.stringify({ payload: null });
   }
-}
+};

@@ -2,11 +2,10 @@ import { Hono } from 'hono';
 import { env } from 'hono/adapter';
 import { authorizationSuccessfulHtml } from '../templates/authorizationSuccessfulHtml';
 import { ENV_VAR, STATUS_CODE } from '../utils/constants';
-import { encryptToken } from '../utils/crypto';
+import { encryptData } from '../utils/crypto';
 import { getStorageInstance, Storage } from '../utils/database';
 import { generateUUID } from '../utils/hash';
 import { sendResponse } from '../utils/response';
-import Cryptr from 'cryptr';
 const oauthRouter = new Hono();
 
 const storage: Storage = getStorageInstance();
@@ -103,9 +102,7 @@ oauthRouter.get('/callback', async (c) => {
 
     const workspace = fetchWorkspaceResonse?.teams?.[0]?.id;
 
-    const cryptr = new Cryptr(SECRET_KEY);
-
-    const encryptedToken = cryptr.encrypt(access_token);
+    const encryptedToken = await encryptData(access_token, SECRET_KEY);
 
     await storage.hset(state, { access_token: encryptedToken, workspace });
 
