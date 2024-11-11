@@ -19,9 +19,14 @@ const authMiddleware = createMiddleware(async (c, next) => {
     return c.json({ error: 'Missing ClickUp authentication token' }, 401);
   }
 
+  console.log({ encryptedToken });
+
   const { SECRET_KEY } = env<ENV_VAR>(c);
 
+  console.log(SECRET_KEY);
   const decryptedToken = await decryptToken(encryptedToken, SECRET_KEY);
+
+  console.log({ decryptedToken });
 
   // Store the token in the environment for use in route handlers
   c.set('clickUpToken', decryptedToken);

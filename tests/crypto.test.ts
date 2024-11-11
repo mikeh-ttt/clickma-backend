@@ -7,32 +7,32 @@ describe('Token Encryption/Decryption', () => {
       {
         name: 'simple string',
         input: 'Hello, World!',
-        key: '3118984d82a4eaf08ad28abd35a51cd6',
+        key: 'YUmQ9yu2xKsi4L16',
       },
       {
         name: 'empty string',
         input: '',
-        key: '3118984d82a4eaf08ad28abd35a51cd6',
+        key: 'YUmQ9yu2xKsi4L16',
       },
       {
         name: 'long string',
         input: 'a'.repeat(1000),
-        key: '3118984d82a4eaf08ad28abd35a51cd6',
+        key: 'YUmQ9yu2xKsi4L16',
       },
       {
         name: 'special characters',
         input: '!@#$%^&*()_+-=[]{}|;:,.<>?`~',
-        key: '3118984d82a4eaf08ad28abd35a51cd6',
+        key: 'YUmQ9yu2xKsi4L16',
       },
       {
         name: 'unicode characters',
         input: '你好，世界！🌍✨',
-        key: '3118984d82a4eaf08ad28abd35a51cd6',
+        key: 'YUmQ9yu2xKsi4L16',
       },
       {
         name: 'JSON string',
         input: JSON.stringify({ test: 'data', number: 123 }),
-        key: '3118984d82a4eaf08ad28abd35a51cd6',
+        key: 'YUmQ9yu2xKsi4L16',
       },
     ];
 
