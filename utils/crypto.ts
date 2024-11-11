@@ -69,6 +69,6 @@ export async function decryptToken(
     const decoder = new TextDecoder();
     return decoder.decode(decryptedData);
   } catch (error) {
-    throw new Error(`Decryption failed: ${error.message}`);
+    throw new Error(`Decryption failed: ${error}`);
   }
 }
