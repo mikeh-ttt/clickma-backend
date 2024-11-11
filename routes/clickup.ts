@@ -25,7 +25,7 @@ const authMiddleware = createMiddleware(async (c, next) => {
 
   console.log(SECRET_KEY);
 
-  const decryptedToken = decryptData(encryptedToken, SECRET_KEY);
+  const decryptedToken = await decryptData(encryptedToken, SECRET_KEY);
 
   console.log({ decryptedToken });
 
