@@ -77,6 +77,7 @@ oauthRouter.get('/callback', async (c) => {
       body: JSON.stringify(body),
     });
 
+    console.log({ response });
     if (!response.ok) {
       const errorResponse = await response.json();
       return sendResponse(
@@ -105,8 +106,6 @@ oauthRouter.get('/callback', async (c) => {
     const workspace = fetchWorkspaceResonse?.teams?.[0]?.id;
 
     const encryptedToken = await encryptToken(access_token, SECRET_KEY);
-
-    console.log({ encryptToken });
 
     await storage.hset(state, { access_token: encryptedToken, workspace });
 
