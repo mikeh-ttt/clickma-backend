@@ -1,9 +1,9 @@
+import Cryptr from 'cryptr';
 import { Hono } from 'hono';
 import { env } from 'hono/adapter';
 import { createMiddleware } from 'hono/factory';
 import { StatusCode } from 'hono/utils/http-status';
 import { ENV_VAR } from '../utils/constants';
-import { decryptToken } from '../utils/crypto';
 const CLICKUP_BASE_API = 'https://api.clickup.com/api/v2';
 type Env = {
   Variables: {
@@ -24,7 +24,10 @@ const authMiddleware = createMiddleware(async (c, next) => {
   const { SECRET_KEY } = env<ENV_VAR>(c);
 
   console.log(SECRET_KEY);
-  const decryptedToken = await decryptToken(encryptedToken, SECRET_KEY);
+
+  const cryptr = new Cryptr(SECRET_KEY);
+
+  const decryptedToken = cryptr.decrypt(encryptedToken);
 
   console.log({ decryptedToken });
 

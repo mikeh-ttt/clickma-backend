@@ -6,6 +6,7 @@ import { encryptToken } from '../utils/crypto';
 import { getStorageInstance, Storage } from '../utils/database';
 import { generateUUID } from '../utils/hash';
 import { sendResponse } from '../utils/response';
+import Cryptr from 'cryptr';
 const oauthRouter = new Hono();
 
 const storage: Storage = getStorageInstance();
@@ -102,7 +103,9 @@ oauthRouter.get('/callback', async (c) => {
 
     const workspace = fetchWorkspaceResonse?.teams?.[0]?.id;
 
-    const encryptedToken = await encryptToken(access_token, SECRET_KEY);
+    const cryptr = new Cryptr(SECRET_KEY);
+
+    const encryptedToken = cryptr.encrypt(access_token);
 
     await storage.hset(state, { access_token: encryptedToken, workspace });
 
