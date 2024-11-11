@@ -3,7 +3,7 @@ import { env } from 'hono/adapter';
 import { createMiddleware } from 'hono/factory';
 import { StatusCode } from 'hono/utils/http-status';
 import { ENV_VAR } from '../utils/constants';
-import { decryptData } from '../utils/crypto';
+import { decrypt } from '../utils/crypto';
 const CLICKUP_BASE_API = 'https://api.clickup.com/api/v2';
 type Env = {
   Variables: {
@@ -19,20 +19,21 @@ const authMiddleware = createMiddleware(async (c, next) => {
     return c.json({ error: 'Missing ClickUp authentication token' }, 401);
   }
 
-  console.log({ encryptedToken });
-
   const { SECRET_KEY } = env<ENV_VAR>(c);
 
-  console.log(SECRET_KEY);
+  try {
+    const decryptedToken = await decrypt(encryptedToken, SECRET_KEY);
 
-  const decryptedToken = await decryptData(encryptedToken, SECRET_KEY);
+    if (decryptedToken) {
+      c.set('clickUpToken', decryptedToken);
+    }
 
-  console.log({ decryptedToken });
-
-  // Store the token in the environment for use in route handlers
-  c.set('clickUpToken', decryptedToken);
-
-  await next();
+    // Store the token in the environment for use in route handlers
+  } catch (error) {
+    console.log('Error setting up middleware');
+  } finally {
+    await next();
+  }
 });
 
 clickupRouter.use('/*', authMiddleware);

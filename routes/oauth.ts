@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { env } from 'hono/adapter';
 import { authorizationSuccessfulHtml } from '../templates/authorizationSuccessfulHtml';
 import { ENV_VAR, STATUS_CODE } from '../utils/constants';
-import { encryptData } from '../utils/crypto';
+import { encrypt } from '../utils/crypto';
 import { getStorageInstance, Storage } from '../utils/database';
 import { generateUUID } from '../utils/hash';
 import { sendResponse } from '../utils/response';
@@ -102,7 +102,7 @@ oauthRouter.get('/callback', async (c) => {
 
     const workspace = fetchWorkspaceResonse?.teams?.[0]?.id;
 
-    const encryptedToken = await encryptData(access_token, SECRET_KEY);
+    const encryptedToken = await encrypt(access_token, SECRET_KEY);
 
     await storage.hset(state, { access_token: encryptedToken, workspace });
 
