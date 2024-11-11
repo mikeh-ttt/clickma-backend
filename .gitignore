@@ -30,4 +30,4 @@ lerna-debug.log*
 .vercel
 
 
-coverage/g
+coverage/
