@@ -1,6 +1,5 @@
 import { Hono } from 'hono';
 import { env } from 'hono/adapter';
-import { SECRET_KEY } from '../api';
 import { authorizationSuccessfulHtml } from '../templates/authorizationSuccessfulHtml';
 import { ENV_VAR, STATUS_CODE } from '../utils/constants';
 import { encryptToken } from '../utils/crypto';
@@ -55,7 +54,7 @@ oauthRouter.get('/callback', async (c) => {
 
   if (!code || !state) return sendResponse(c, 'error', 'No state was provided');
 
-  const { CLIENT_ID, CLIENT_SECRET } = env<ENV_VAR>(c);
+  const { CLIENT_ID, CLIENT_SECRET, SECRET_KEY } = env<ENV_VAR>(c);
 
   const tokenAPI = `https://api.clickup.com/api/v2/oauth/token`;
 
@@ -76,7 +75,6 @@ oauthRouter.get('/callback', async (c) => {
       body: JSON.stringify(body),
     });
 
-    console.log({ response });
     if (!response.ok) {
       const errorResponse = await response.json();
       return sendResponse(
@@ -132,8 +130,6 @@ oauthRouter.post('/access-token', async (c) => {
 
   const writeKey = await storage.get<string>(readKey);
 
-  console.log({ readKey, writeKey });
-
   if (!writeKey) {
     return sendResponse(
       c,
@@ -146,8 +142,6 @@ oauthRouter.post('/access-token', async (c) => {
 
   const accessToken = await storage.hget(writeKey, 'access_token');
   const workspace = await storage.hget(writeKey, 'workspace');
-
-  console.log({ accessToken, workspace });
 
   if (accessToken) {
     return sendResponse(

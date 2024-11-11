@@ -1,16 +1,14 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { handle } from 'hono/vercel';
-import oauthRoutes from '../routes/oauth';
-import clickupRouter from '../routes/clickup';
 import { logger } from 'hono/logger';
+import { handle } from 'hono/vercel';
+import clickupRouter from '../routes/clickup';
+import oauthRoutes from '../routes/oauth';
 export const config = {
   runtime: 'edge',
 };
 
 const app = new Hono().basePath('/api');
-
-export const SECRET_KEY = process.env.SECRET_KEY || 'encrypt_secret_key';
 
 // CORS middleware
 app.use(

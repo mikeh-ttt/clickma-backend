@@ -1,7 +1,8 @@
 import { Hono } from 'hono';
+import { env } from 'hono/adapter';
 import { createMiddleware } from 'hono/factory';
 import { StatusCode } from 'hono/utils/http-status';
-import { SECRET_KEY } from '../api';
+import { ENV_VAR } from '../utils/constants';
 import { decryptToken } from '../utils/crypto';
 const CLICKUP_BASE_API = 'https://api.clickup.com/api/v2';
 type Env = {
@@ -17,6 +18,8 @@ const authMiddleware = createMiddleware(async (c, next) => {
   if (!encryptedToken) {
     return c.json({ error: 'Missing ClickUp authentication token' }, 401);
   }
+
+  const { SECRET_KEY } = env<ENV_VAR>(c);
 
   const decryptedToken = await decryptToken(encryptedToken, SECRET_KEY);
 
