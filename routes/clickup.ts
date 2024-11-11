@@ -1,10 +1,9 @@
 import { Hono } from 'hono';
 import { env } from 'hono/adapter';
 import { createMiddleware } from 'hono/factory';
+import { verify } from 'hono/jwt';
 import { StatusCode } from 'hono/utils/http-status';
 import { ENV_VAR } from '../utils/constants';
-import { decrypt } from '../utils/crypto';
-import { decode } from 'hono/jwt';
 const CLICKUP_BASE_API = 'https://api.clickup.com/api/v2';
 type Env = {
   Variables: {
@@ -14,25 +13,23 @@ type Env = {
 const clickupRouter = new Hono<Env>();
 
 const authMiddleware = createMiddleware(async (c, next) => {
-  const encryptedToken = c.req.header('Authorization');
+  const authHeader = c.req.header('Authorization');
 
-  if (!encryptedToken) {
+  if (!authHeader) {
     return c.json({ error: 'Missing ClickUp authentication token' }, 401);
   }
+
+  const encryptedToken = authHeader.split('Bearer')[1].trim();
 
   const { SECRET_KEY } = env<ENV_VAR>(c);
 
   try {
-    const { header, payload } = decode(encryptedToken);
-
-    console.log({ header, payload });
-    const decryptedToken = await decrypt(encryptedToken, SECRET_KEY);
-
-    if (decryptedToken) {
-      c.set('clickUpToken', decryptedToken);
-    }
+    const decodedPayload = await verify(encryptedToken, SECRET_KEY);
 
     // Store the token in the environment for use in route handlers
+    if (decodedPayload && decodedPayload?.access_token) {
+      c.set('clickUpToken', decodedPayload.access_token);
+    }
   } catch (error) {
     console.log('Error setting up middleware');
   } finally {

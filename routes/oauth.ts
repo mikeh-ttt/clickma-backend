@@ -1,12 +1,11 @@
 import { Hono } from 'hono';
 import { env } from 'hono/adapter';
+import { sign } from 'hono/jwt';
 import { authorizationSuccessfulHtml } from '../templates/authorizationSuccessfulHtml';
 import { ENV_VAR, STATUS_CODE } from '../utils/constants';
-import { encrypt } from '../utils/crypto';
 import { getStorageInstance, Storage } from '../utils/database';
 import { generateUUID } from '../utils/hash';
 import { sendResponse } from '../utils/response';
-import { sign } from 'hono/jwt';
 
 const oauthRouter = new Hono();
 const storage: Storage = getStorageInstance();
