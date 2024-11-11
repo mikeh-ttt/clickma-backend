@@ -4,6 +4,7 @@ import { createMiddleware } from 'hono/factory';
 import { StatusCode } from 'hono/utils/http-status';
 import { ENV_VAR } from '../utils/constants';
 import { decrypt } from '../utils/crypto';
+import { decode } from 'hono/jwt';
 const CLICKUP_BASE_API = 'https://api.clickup.com/api/v2';
 type Env = {
   Variables: {
@@ -22,6 +23,9 @@ const authMiddleware = createMiddleware(async (c, next) => {
   const { SECRET_KEY } = env<ENV_VAR>(c);
 
   try {
+    const { header, payload } = decode(encryptedToken);
+
+    console.log({ header, payload });
     const decryptedToken = await decrypt(encryptedToken, SECRET_KEY);
 
     if (decryptedToken) {
