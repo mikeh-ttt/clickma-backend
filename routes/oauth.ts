@@ -106,6 +106,8 @@ oauthRouter.get('/callback', async (c) => {
 
     const encryptedToken = await encryptToken(access_token, SECRET_KEY);
 
+    console.log({ encryptToken });
+
     await storage.hset(state, { access_token: encryptedToken, workspace });
 
     return c.html(authorizationSuccessfulHtml);
