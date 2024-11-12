@@ -2,13 +2,27 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { handle } from 'hono/vercel';
+import { rateLimiter } from 'hono-rate-limiter';
 import clickupRouter from '../routes/clickup';
 import oauthRoutes from '../routes/oauth';
+import { ENV_VAR } from '../utils/constants';
 export const config = {
   runtime: 'edge',
 };
 
+const RATE_LIMIT_KEY = process.env.RATE_LIMIT_KEY || 'rate_limit_key';
+
 const app = new Hono().basePath('/api');
+
+const limiter = rateLimiter({
+  windowMs: 15 * 60 * 1000,
+  limit: 100,
+  standardHeaders: 'draft-6',
+  keyGenerator: (c) => RATE_LIMIT_KEY,
+});
+
+// Apply the rate limiting middleware to all requests.
+app.use(limiter);
 
 // CORS middleware
 app.use(
