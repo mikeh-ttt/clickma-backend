@@ -4,7 +4,7 @@ import { createMiddleware } from 'hono/factory';
 import { verify } from 'hono/jwt';
 import { StatusCode } from 'hono/utils/http-status';
 import { ENV_VAR } from '../utils/constants';
-const CLICKUP_BASE_API = 'https://api.clickup.com/api/v2';
+const CLICKUP_BASE_API = 'https://api.clickup.com/api';
 type Env = {
   Variables: {
     clickUpToken: string;
@@ -41,17 +41,51 @@ clickupRouter.use('/*', authMiddleware);
 
 clickupRouter.get('/task/:workspaceId/:taskId', async (c) => {
   const taskId = c.req.param('taskId');
-  const teamId = c.req.param('workspaceId');
+  const workspaceId = c.req.param('workspaceId');
   const customTaskIds = c.req.query('custom_task_ids') || 'false';
   const clickUpToken = c.get('clickUpToken');
 
-  if (!teamId) {
+  if (!workspaceId) {
     return c.json({ error: 'Missing workspaceId parameter' }, 400);
   }
 
   try {
     const response = await fetch(
-      `${CLICKUP_BASE_API}/task/${taskId}?team_id=${teamId}&custom_task_ids=${customTaskIds}&include_markdown_description=true`,
+      `${CLICKUP_BASE_API}/v2/task/${taskId}?team_id=${workspaceId}&custom_task_ids=${customTaskIds}&include_markdown_description=true`,
+      {
+        headers: {
+          Authorization: clickUpToken,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      return c.json(errorData, response.status as StatusCode);
+    }
+
+    const data = await response.json();
+
+    return c.json({ ...data });
+  } catch (error) {
+    console.error('Error proxying request to ClickUp:', error);
+    return c.json({ error: 'Failed to fetch data from ClickUp' }, 500);
+  }
+});
+
+clickupRouter.get('/workspaces/:workspaceId/docs/:docId', async (c) => {
+  const workspaceId = c.req.param('workspaceId');
+  const docId = c.req.param('docId');
+  const clickUpToken = c.get('clickUpToken');
+
+  if (!workspaceId) {
+    return c.json({ error: 'Missing workspaceId parameter' }, 400);
+  }
+
+  try {
+    const response = await fetch(
+      `${CLICKUP_BASE_API}/v3/workspaces/${workspaceId}/docs/${docId}`,
       {
         headers: {
           Authorization: clickUpToken,

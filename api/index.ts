@@ -1,11 +1,10 @@
 import { Hono } from 'hono';
+import { rateLimiter } from 'hono-rate-limiter';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { handle } from 'hono/vercel';
-import { rateLimiter } from 'hono-rate-limiter';
 import clickupRouter from '../routes/clickup';
 import oauthRoutes from '../routes/oauth';
-import { ENV_VAR } from '../utils/constants';
 export const config = {
   runtime: 'edge',
 };
